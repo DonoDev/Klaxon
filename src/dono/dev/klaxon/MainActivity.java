@@ -1,7 +1,7 @@
 package dono.dev.klaxon;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+import java.util.Map.Entry;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,32 +12,63 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
+/**
+ * On first load enter username/password.  check prefs and prompt if null;
+ * @author EricDonovan
+ */
 public class MainActivity extends Activity implements OnClickListener{
 
     private static final String TAG = "MainActivity";
 
-    private static final String URL      = "https://triton.ironhelmet.com/arequest/login";
-    private static final String ALIAS    = "emdonova@ncsu.edu";
-    private static final String PASSWORD = "Iwantabelt3";
+    private static final String URL = "https://triton.ironhelmet.com/arequest/login";
+    private String alias;
+    private String password;
+
+    private SharedPreferences prefs;
 
     private RequestQueue queue;
+
+    private TextView resultsView;
+    
+    private MainActivity mainActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button button = (Button) findViewById(R.id.authorizeButton);
-        button.setOnClickListener(this);
+        mainActivity = this;
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        prefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
+
+        alias    = prefs.getString("neptunesUsername", "");
+        password = prefs.getString("neptunesPassword", "");
+
+        Button loginButton = (Button) findViewById(R.id.authorizeButton);
+        loginButton.setOnClickListener(this);
+        Button pullUserButton = (Button) findViewById(R.id.getUserDataButton);
+        pullUserButton.setOnClickListener(this);
+
+        resultsView = (TextView) findViewById(R.id.resultView);
 
         // Instantiate the RequestQueue.
         queue = Volley.newRequestQueue(this);
@@ -52,11 +83,9 @@ public class MainActivity extends Activity implements OnClickListener{
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.action_settings) {
+            displaySettingsDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -64,11 +93,18 @@ public class MainActivity extends Activity implements OnClickListener{
 
     @Override
     public void onClick(View v) {
+        StringRequest request;
         switch (v.getId()) {
         case R.id.authorizeButton:
-            Toast.makeText(this, "Testing", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "authorizing", Toast.LENGTH_SHORT).show();
             // Add the request to the RequestQueue.
-            StringRequest request = createPostRequest();
+            request = createLoginPostRequest();
+            if(request != null)
+                queue.add(request);
+            break;
+        case R.id.getUserDataButton:
+            Toast.makeText(this, "pulling user data", Toast.LENGTH_SHORT).show();
+            request = createPullUserRequest();
             if(request != null)
                 queue.add(request);
             break;
@@ -77,14 +113,14 @@ public class MainActivity extends Activity implements OnClickListener{
         }
     }
 
-    private StringRequest createPostRequest() {
+    private StringRequest createLoginPostRequest() {
         StringRequest stringRequest = null;
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(this);
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("type", "login");
-            jsonBody.put("alias", ALIAS);
-            jsonBody.put("password", PASSWORD);
+            jsonBody.put("alias", alias);
+            jsonBody.put("password", password);
             final String requestBody = jsonBody.toString();
 
             stringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
@@ -120,10 +156,17 @@ public class MainActivity extends Activity implements OnClickListener{
                         responseString = String.valueOf(response.statusCode);
                         // can get more details such as response.headers
 
-                        Log.i(TAG, "Status Code: " + responseString);
-                        for(String header : response.headers.values()){
+                        final StringBuilder builder = new StringBuilder();
+                        for(Entry<String,String> header : response.headers.entrySet()){
+                            builder.append(header.toString()).append("\n");
                             Log.i(TAG, "Response header: " + header);
                         }
+                        mainActivity.runOnUiThread(new Runnable(){
+                            @Override
+                            public void run() {
+                                resultsView.setText(builder.toString());
+                            }
+                        });
                     }
                     return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
                 }
@@ -134,11 +177,86 @@ public class MainActivity extends Activity implements OnClickListener{
         return stringRequest;
     }
 
+    private StringRequest createPullUserRequest(){
+        return null;
+    }
+
     @Override
     protected void onStop() {
         super.onStop();
         if (queue != null) {
             queue.cancelAll(TAG);
         }
+    }
+
+    SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener = new
+            SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            // your stuff here
+        }
+    };
+
+    private void displaySettingsDialog(){
+        Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
+
+        //setup dialog view
+        View view = getLayoutInflater().inflate(R.layout.settings_dialog_view, null);
+
+        final EditText usernameET = (EditText) view.findViewById(R.id.usernameEditText);
+        final EditText passwordET = (EditText) view.findViewById(R.id.passwordEditText);
+
+        //set default values
+        usernameET.setText(alias);
+        if(!password.equals(""));
+            passwordET.setText("********");
+
+        passwordET.setOnTouchListener(new OnTouchListener(){
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                passwordET.setText("");
+                return false;
+            }
+        });
+
+        //setup dialog
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+        .setTitle("Klaxon Settings")
+        .setIcon(icon)
+        .setView(view)
+        .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                        String alias    = usernameET.getText().toString();
+                        String password = passwordET.getText().toString();
+
+                        if(alias.equals("") || password.equals("")){
+                            Toast.makeText(getBaseContext(), "Please enter an email and password", Toast.LENGTH_SHORT).show();
+                        } else {
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putString("neptunesUsername", alias);
+                            editor.putString("neptunesPassword", password);
+                            editor.commit();
+                            setAliasPassword(alias, password);
+                            dialog.dismiss();
+                        }
+                    }
+        })
+        .setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                        dialog.dismiss();
+                    }
+        });
+        final AlertDialog ad = adb.create();
+        ad.show();
+    }
+
+    private void setAliasPassword(String alias, String password){
+        this.alias    = alias;
+        this.password = password;
     }
 }

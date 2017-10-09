@@ -1,4 +1,4 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,15 +9,45 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="dono.dev.klaxon.MainActivity" >
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/headerContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true">
 
-    <Button
-        android:id="@+id/authorizeButton"
-        android:layout_width="wrap_content"
+       <Button
+           android:id="@+id/authorizeButton"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:text="Authorize"
+           android:layout_gravity="center_horizontal"/>
+        <Button 
+            android:id="@+id/getUserDataButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pull User Data"
+            android:layout_gravity="center_horizontal"/>
+    </LinearLayout>
+
+    <!-- Don't have a use for a footer yet -->
+    <LinearLayout
+        android:id="@+id/footerContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Authorize"/>
+        android:orientation="horizontal"
+        android:layout_alignParentBottom="true"/>
 
-</LinearLayout>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/footerContainer"
+        android:layout_below="@id/headerContainer"
+        android:fillViewport="true">
+
+        <TextView 
+            android:id="@+id/resultView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </ScrollView>
+</RelativeLayout>
