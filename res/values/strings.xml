@@ -5,4 +5,11 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
+    <!-- Preference Strings -->
+    <string name="username">neptunesUsername</string>
+    <string name="password">neptunesPassword</string>
+    <string name="defaultValue"></string>
+    
+    <!-- Neptune's URLs -->
+    <string name="loginUrl">https://triton.ironhelmet.com/arequest/login</string>
 </resources>

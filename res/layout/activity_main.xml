@@ -20,14 +20,17 @@
            android:id="@+id/authorizeButton"
            android:layout_width="wrap_content"
            android:layout_height="wrap_content"
-           android:text="Authorize"
-           android:layout_gravity="center_horizontal"/>
+           android:text="Authorize"/>
         <Button 
             android:id="@+id/getUserDataButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pull User Data"
-            android:layout_gravity="center_horizontal"/>
+            android:text="Pull Data"/>
+        <Button 
+            android:id="@+id/startServiceButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start Service"/>
     </LinearLayout>
 
     <!-- Don't have a use for a footer yet -->

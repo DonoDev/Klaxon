@@ -1,15 +1,6 @@
 package dono.dev.klaxon;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Map.Entry;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.android.volley.*;
-import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,7 +9,6 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -29,6 +19,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import dono.dev.http.HttpManager;
 
 /**
  * On first load enter username/password.  check prefs and prompt if null;
@@ -38,17 +29,13 @@ public class MainActivity extends Activity implements OnClickListener{
 
     private static final String TAG = "MainActivity";
 
-    private static final String URL = "https://triton.ironhelmet.com/arequest/login";
     private String alias;
     private String password;
 
     private SharedPreferences prefs;
 
-    private RequestQueue queue;
-
-    private TextView resultsView;
-    
-    private MainActivity mainActivity;
+    public static TextView resultsView;
+    public static MainActivity mainActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,18 +47,20 @@ public class MainActivity extends Activity implements OnClickListener{
         prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         prefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
-        alias    = prefs.getString("neptunesUsername", "");
-        password = prefs.getString("neptunesPassword", "");
+        alias    = prefs.getString(getResString(R.string.username), getResString(R.string.defaultValue));
+        password = prefs.getString(getResString(R.string.password), getResString(R.string.defaultValue));
 
         Button loginButton = (Button) findViewById(R.id.authorizeButton);
         loginButton.setOnClickListener(this);
         Button pullUserButton = (Button) findViewById(R.id.getUserDataButton);
         pullUserButton.setOnClickListener(this);
+        Button startServiceButton = (Button) findViewById(R.id.startServiceButton);
+        startServiceButton.setOnClickListener(this);
 
         resultsView = (TextView) findViewById(R.id.resultView);
 
         // Instantiate the RequestQueue.
-        queue = Volley.newRequestQueue(this);
+        HttpManager.initialize(this);
     }
 
     @Override
@@ -98,94 +87,29 @@ public class MainActivity extends Activity implements OnClickListener{
         case R.id.authorizeButton:
             Toast.makeText(this, "authorizing", Toast.LENGTH_SHORT).show();
             // Add the request to the RequestQueue.
-            request = createLoginPostRequest();
+            request = HttpManager.createLoginPostRequest(this);
             if(request != null)
-                queue.add(request);
+                HttpManager.addStringRequestToQueue(request);
             break;
         case R.id.getUserDataButton:
             Toast.makeText(this, "pulling user data", Toast.LENGTH_SHORT).show();
-            request = createPullUserRequest();
+            request = HttpManager.createPullUserRequest(this);
             if(request != null)
-                queue.add(request);
+                HttpManager.addStringRequestToQueue(request);
             break;
+        case R.id.startServiceButton:
+            Toast.makeText(this, "starting service", Toast.LENGTH_SHORT).show();
+            startService();
         default:
             break;
         }
     }
 
-    private StringRequest createLoginPostRequest() {
-        StringRequest stringRequest = null;
-        try {
-            RequestQueue requestQueue = Volley.newRequestQueue(this);
-            JSONObject jsonBody = new JSONObject();
-            jsonBody.put("type", "login");
-            jsonBody.put("alias", alias);
-            jsonBody.put("password", password);
-            final String requestBody = jsonBody.toString();
-
-            stringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
-                @Override
-                public void onResponse(String response) {
-                    Log.i(TAG, response);
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    Log.e(TAG, error.toString());
-                }
-            }) {
-                @Override
-                public String getBodyContentType() {
-                    return "application/json; charset=utf-8";
-                }
-
-                @Override
-                public byte[] getBody() throws AuthFailureError {
-                    try {
-                        return requestBody == null ? null : requestBody.getBytes("utf-8");
-                    } catch (UnsupportedEncodingException uee) {
-                        VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", requestBody, "utf-8");
-                        return null;
-                    }
-                }
-
-                @Override
-                protected Response<String> parseNetworkResponse(NetworkResponse response) {
-                    String responseString = "";
-                    if (response != null) {
-                        responseString = String.valueOf(response.statusCode);
-                        // can get more details such as response.headers
-
-                        final StringBuilder builder = new StringBuilder();
-                        for(Entry<String,String> header : response.headers.entrySet()){
-                            builder.append(header.toString()).append("\n");
-                            Log.i(TAG, "Response header: " + header);
-                        }
-                        mainActivity.runOnUiThread(new Runnable(){
-                            @Override
-                            public void run() {
-                                resultsView.setText(builder.toString());
-                            }
-                        });
-                    }
-                    return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
-                }
-            };
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return stringRequest;
-    }
-
-    private StringRequest createPullUserRequest(){
-        return null;
-    }
-
     @Override
     protected void onStop() {
         super.onStop();
-        if (queue != null) {
-            queue.cancelAll(TAG);
+        if (HttpManager.queue != null) {
+            HttpManager.queue.cancelAll(TAG);
         }
     }
 
@@ -258,5 +182,13 @@ public class MainActivity extends Activity implements OnClickListener{
     private void setAliasPassword(String alias, String password){
         this.alias    = alias;
         this.password = password;
+    }
+
+    private void startService(){
+        
+    }
+
+    private String getResString(int id){
+        return getResources().getString(id);
     }
 }
