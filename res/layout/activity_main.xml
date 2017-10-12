@@ -14,7 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_alignParentTop="true">
+        android:layout_alignParentTop="true"
+        android:gravity="center_horizontal">
 
        <Button
            android:id="@+id/authorizeButton"
@@ -25,12 +26,7 @@
             android:id="@+id/getUserDataButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pull Data"/>
-        <Button 
-            android:id="@+id/startServiceButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start Service"/>
+            android:text="Get Games"/>
     </LinearLayout>
 
     <!-- Don't have a use for a footer yet -->
@@ -48,9 +44,20 @@
         android:layout_below="@id/headerContainer"
         android:fillViewport="true">
 
-        <TextView 
-            android:id="@+id/resultView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <!-- scroll view container -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Debug Log"/>
+
+            <TextView 
+                android:id="@+id/resultView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
     </ScrollView>
 </RelativeLayout>

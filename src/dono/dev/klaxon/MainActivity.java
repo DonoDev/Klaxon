@@ -1,5 +1,6 @@
 package dono.dev.klaxon;
 
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 
 import android.app.Activity;
@@ -20,10 +21,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import dono.dev.http.HttpManager;
+import dono.dev.model.InitPlayerObjectAdapter;
 
 /**
  * On first load enter username/password.  check prefs and prompt if null;
- * @author EricDonovan
+ * @author Eric Donovan, /u/burnbarrelncs, donodev, ericdonovandev@gmail.com
+ * 
  */
 public class MainActivity extends Activity implements OnClickListener{
 
@@ -34,8 +37,14 @@ public class MainActivity extends Activity implements OnClickListener{
 
     private SharedPreferences prefs;
 
+    private Button loginButton;
+    private Button pullUserButton;
+
     public static TextView resultsView;
     public static MainActivity mainActivity;
+
+    //model
+    public static InitPlayerObjectAdapter initPlayerObjectAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,17 +59,19 @@ public class MainActivity extends Activity implements OnClickListener{
         alias    = prefs.getString(getResString(R.string.username), getResString(R.string.defaultValue));
         password = prefs.getString(getResString(R.string.password), getResString(R.string.defaultValue));
 
-        Button loginButton = (Button) findViewById(R.id.authorizeButton);
+        loginButton = (Button) findViewById(R.id.authorizeButton);
         loginButton.setOnClickListener(this);
-        Button pullUserButton = (Button) findViewById(R.id.getUserDataButton);
+        pullUserButton = (Button) findViewById(R.id.getUserDataButton);
         pullUserButton.setOnClickListener(this);
-        Button startServiceButton = (Button) findViewById(R.id.startServiceButton);
-        startServiceButton.setOnClickListener(this);
+        pullUserButton.setEnabled(false);
 
         resultsView = (TextView) findViewById(R.id.resultView);
 
         // Instantiate the RequestQueue.
         HttpManager.initialize(this);
+
+        // Tutorial
+        tutorial();
     }
 
     @Override
@@ -76,30 +87,32 @@ public class MainActivity extends Activity implements OnClickListener{
         if (id == R.id.action_settings) {
             displaySettingsDialog();
             return true;
+        } else if (id == R.id.action_quit){
+            finish();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onClick(View v) {
-        StringRequest request;
+        StringRequest     stringRequest;
+        JsonObjectRequest jsonRequest;
         switch (v.getId()) {
         case R.id.authorizeButton:
             Toast.makeText(this, "authorizing", Toast.LENGTH_SHORT).show();
-            // Add the request to the RequestQueue.
-            request = HttpManager.createLoginPostRequest(this);
-            if(request != null)
-                HttpManager.addStringRequestToQueue(request);
+            loginButton.setEnabled(false);
+            pullUserButton.setEnabled(true);
+            stringRequest = HttpManager.createLoginPostRequest(this);
+            if(stringRequest != null)
+                HttpManager.addStringRequestToQueue(stringRequest);
             break;
         case R.id.getUserDataButton:
             Toast.makeText(this, "pulling user data", Toast.LENGTH_SHORT).show();
-            request = HttpManager.createPullUserRequest(this);
-            if(request != null)
-                HttpManager.addStringRequestToQueue(request);
+            stringRequest = HttpManager.createInitPlayerStringRequest(this);
+            if(stringRequest != null)
+                HttpManager.addStringRequestToQueue(stringRequest);
             break;
-        case R.id.startServiceButton:
-            Toast.makeText(this, "starting service", Toast.LENGTH_SHORT).show();
-            startService();
         default:
             break;
         }
@@ -132,8 +145,7 @@ public class MainActivity extends Activity implements OnClickListener{
 
         //set default values
         usernameET.setText(alias);
-        if(!password.equals(""));
-            passwordET.setText("********");
+        passwordET.setText(password);
 
         passwordET.setOnTouchListener(new OnTouchListener(){
             @Override
@@ -190,5 +202,52 @@ public class MainActivity extends Activity implements OnClickListener{
 
     private String getResString(int id){
         return getResources().getString(id);
+    }
+
+    private void tutorial(){
+        Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
+
+        //setup dialog
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+        .setTitle("Tutorial")
+        .setIcon(icon)
+        .setMessage("Please enter your alias or email and your password in the settings menu. "
+                + "Don't worry I am not stealing them ;) Then press 'Authorize', then press 'Get Games'")
+        .setPositiveButton("Close", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                    }
+        });
+        final AlertDialog ad = adb.create();
+        ad.show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
+
+        //setup dialog
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+        .setTitle("Exit Klaxon?")
+        .setIcon(icon)
+        .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                        dialog.dismiss();
+                        finish();
+                    }
+        })
+        .setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                        dialog.dismiss();
+                    }
+        });
+        final AlertDialog ad = adb.create();
+        ad.show();
     }
 }
