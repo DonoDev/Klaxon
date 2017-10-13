@@ -1,26 +1,23 @@
 package dono.dev.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import android.app.AlertDialog;
+import com.android.volley.toolbox.StringRequest;
+
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import dono.dev.http.HttpManager;
 import dono.dev.klaxon.MainActivity;
 import dono.dev.klaxon.R;
 import dono.dev.utils.JsonObjectKeysPair;
@@ -88,47 +85,9 @@ public class InitPlayerObjectAdapter extends BaseAdapter{
                 }
                 openGames.add(new OpenGame(name, number, players, version));
             }
-            displayGames();
         } catch (JSONException e) {
             Log.e(TAG, "JSONException: " + e);
         }
-    }
-
-    private void displayGames(){
-        MainActivity.mainActivity.runOnUiThread(new Runnable(){
-            @Override
-            public void run() {
-                displayGamesDialog();
-            }
-        });
-    }
-
-    private void displayGamesDialog(){
-
-        Context context = MainActivity.mainActivity;
-
-        Drawable icon = context.getResources().getDrawable(R.drawable.ic_launcher);
-
-        //setup dialog view
-        View view = MainActivity.mainActivity.getLayoutInflater().inflate(R.layout.player_games_dialog_view, null);
-
-        ListView listView = (ListView) view.findViewById(R.id.gameListView);
-        listView.setAdapter(this);
-
-        //setup dialog
-        AlertDialog.Builder adb = new AlertDialog.Builder(context)
-        .setTitle("Player Games")
-        .setIcon(icon)
-        .setView(view)
-        .setPositiveButton("Close", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog,
-                            int whichButton) {
-                        dialog.dismiss();
-                    }
-        });
-        final AlertDialog ad = adb.create();
-        ad.show();
     }
 
     @Override
@@ -150,7 +109,7 @@ public class InitPlayerObjectAdapter extends BaseAdapter{
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        OpenGame openGame = openGames.get(position);
+        final OpenGame openGame = openGames.get(position);
 
         View view;
         if (convertView == null) {
@@ -162,12 +121,15 @@ public class InitPlayerObjectAdapter extends BaseAdapter{
         view.setOnClickListener(new OnClickListener(){
             @Override
             public void onClick(View v) {
-                MainActivity.mainActivity.runOnUiThread(new Runnable(){
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.mainActivity, "Coming Soon!", Toast.LENGTH_SHORT).show();
-                    }
-                });
+//                MainActivity.mainActivity.runOnUiThread(new Runnable(){
+//                    @Override
+//                    public void run() {
+//                        Toast.makeText(MainActivity.mainActivity, openGame.getNumber(), Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+                StringRequest stringRequest = HttpManager.createOrderStringRequest(MainActivity.mainActivity, openGame);
+                if(stringRequest != null)
+                    HttpManager.addStringRequestToQueue(stringRequest);
             }
         });
 

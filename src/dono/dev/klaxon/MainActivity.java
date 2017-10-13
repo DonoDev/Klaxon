@@ -1,6 +1,5 @@
 package dono.dev.klaxon;
 
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 
 import android.app.Activity;
@@ -16,12 +15,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import dono.dev.http.HttpManager;
 import dono.dev.model.InitPlayerObjectAdapter;
+import dono.dev.model.OpenGame;
 
 /**
  * On first load enter username/password.  check prefs and prompt if null;
@@ -37,10 +38,8 @@ public class MainActivity extends Activity implements OnClickListener{
 
     private SharedPreferences prefs;
 
-    private Button loginButton;
-    private Button pullUserButton;
-
-    public static TextView resultsView;
+    private static ProgressBar spinner;
+    public static ListView resultsView;
     public static MainActivity mainActivity;
 
     //model
@@ -59,19 +58,12 @@ public class MainActivity extends Activity implements OnClickListener{
         alias    = prefs.getString(getResString(R.string.username), getResString(R.string.defaultValue));
         password = prefs.getString(getResString(R.string.password), getResString(R.string.defaultValue));
 
-        loginButton = (Button) findViewById(R.id.authorizeButton);
-        loginButton.setOnClickListener(this);
-        pullUserButton = (Button) findViewById(R.id.getUserDataButton);
-        pullUserButton.setOnClickListener(this);
-        pullUserButton.setEnabled(false);
-
-        resultsView = (TextView) findViewById(R.id.resultView);
+        resultsView = (ListView)    findViewById(R.id.resultView);
+        spinner     = (ProgressBar) findViewById(R.id.progressBar);
 
         // Instantiate the RequestQueue.
         HttpManager.initialize(this);
-
-        // Tutorial
-        tutorial();
+        displayLoginDialog();
     }
 
     @Override
@@ -84,8 +76,8 @@ public class MainActivity extends Activity implements OnClickListener{
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            displaySettingsDialog();
+        if (id == R.id.action_login) {
+            displayLoginDialog();
             return true;
         } else if (id == R.id.action_quit){
             finish();
@@ -96,23 +88,9 @@ public class MainActivity extends Activity implements OnClickListener{
 
     @Override
     public void onClick(View v) {
-        StringRequest     stringRequest;
-        JsonObjectRequest jsonRequest;
         switch (v.getId()) {
-        case R.id.authorizeButton:
-            Toast.makeText(this, "authorizing", Toast.LENGTH_SHORT).show();
-            loginButton.setEnabled(false);
-            pullUserButton.setEnabled(true);
-            stringRequest = HttpManager.createLoginPostRequest(this);
-            if(stringRequest != null)
-                HttpManager.addStringRequestToQueue(stringRequest);
-            break;
-        case R.id.getUserDataButton:
-            Toast.makeText(this, "pulling user data", Toast.LENGTH_SHORT).show();
-            stringRequest = HttpManager.createInitPlayerStringRequest(this);
-            if(stringRequest != null)
-                HttpManager.addStringRequestToQueue(stringRequest);
-            break;
+//        case R.id.:
+//            break;
         default:
             break;
         }
@@ -134,7 +112,7 @@ public class MainActivity extends Activity implements OnClickListener{
         }
     };
 
-    private void displaySettingsDialog(){
+    private void displayLoginDialog(){
         Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
 
         //setup dialog view
@@ -169,6 +147,7 @@ public class MainActivity extends Activity implements OnClickListener{
 
                         if(alias.equals("") || password.equals("")){
                             Toast.makeText(getBaseContext(), "Please enter an email and password", Toast.LENGTH_SHORT).show();
+                            return;
                         } else {
                             SharedPreferences.Editor editor = prefs.edit();
                             editor.putString("neptunesUsername", alias);
@@ -177,6 +156,10 @@ public class MainActivity extends Activity implements OnClickListener{
                             setAliasPassword(alias, password);
                             dialog.dismiss();
                         }
+
+                        StringRequest stringRequest = HttpManager.createLoginPostRequest(mainActivity);
+                        if(stringRequest != null)
+                            HttpManager.addStringRequestToQueue(stringRequest);
                     }
         })
         .setNegativeButton("Cancel",
@@ -204,25 +187,6 @@ public class MainActivity extends Activity implements OnClickListener{
         return getResources().getString(id);
     }
 
-    private void tutorial(){
-        Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
-
-        //setup dialog
-        AlertDialog.Builder adb = new AlertDialog.Builder(this)
-        .setTitle("Tutorial")
-        .setIcon(icon)
-        .setMessage("Please enter your alias or email and your password in the settings menu. "
-                + "Don't worry I am not stealing them ;) Then press 'Authorize', then press 'Get Games'")
-        .setPositiveButton("Close", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog,
-                            int whichButton) {
-                    }
-        });
-        final AlertDialog ad = adb.create();
-        ad.show();
-    }
-
     @Override
     public void onBackPressed() {
         Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
@@ -241,6 +205,37 @@ public class MainActivity extends Activity implements OnClickListener{
         })
         .setNegativeButton("Cancel",
                 new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                            int whichButton) {
+                        dialog.dismiss();
+                    }
+        });
+        final AlertDialog ad = adb.create();
+        ad.show();
+    }
+
+    public static void setAdapter(){
+        spinner.setVisibility(View.GONE);
+        resultsView.setAdapter(initPlayerObjectAdapter);
+    }
+
+    public void displayGameInfo(OpenGame openGame, String gameData){
+
+        Drawable icon = getResources().getDrawable(R.drawable.ic_launcher);
+
+        //setup dialog view
+        View view = getLayoutInflater().inflate(R.layout.game_data_view, null);
+
+        TextView gameDataTV = (TextView) view.findViewById(R.id.gameDataTV);
+        gameDataTV.setText(gameData);
+
+        //setup dialog
+        AlertDialog.Builder adb = new AlertDialog.Builder(this)
+        .setTitle(openGame.getName())
+        .setIcon(icon)
+        .setView(view)
+        .setPositiveButton("Close", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog,
                             int whichButton) {

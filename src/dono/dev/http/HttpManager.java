@@ -7,17 +7,13 @@ import java.util.Map.Entry;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
-import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.Request.Method;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
@@ -30,10 +26,12 @@ import android.util.Log;
 import dono.dev.klaxon.MainActivity;
 import dono.dev.klaxon.R;
 import dono.dev.model.InitPlayerObjectAdapter;
+import dono.dev.model.OpenGame;
 
 /**
  * TODO update url strings
  * TODO make one request method
+ * TODO implement callbacks
  * @author EricDonovan
  *
  */
@@ -56,11 +54,7 @@ public class HttpManager {
         final String alias    = prefs.getString(getResString(R.string.username), getResString(R.string.defaultValue));
         final String password = prefs.getString(getResString(R.string.password), getResString(R.string.defaultValue));
 
-        Log.d(TAG, "Alias: " + alias);
-        Log.d(TAG, "Password: " + password);
-        Log.d(TAG, getResString(R.string.loginUrl));
-
-        stringRequest = new StringRequest(Request.Method.POST, getResString(R.string.loginUrl), new Response.Listener<String>() {
+        stringRequest = new StringRequest(Request.Method.POST, getResString(R.string.loginUrlRequest), new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 Log.i(TAG, response);
@@ -107,7 +101,9 @@ public class HttpManager {
                     MainActivity.mainActivity.runOnUiThread(new Runnable(){
                         @Override
                         public void run() {
-                            MainActivity.resultsView.setText(builder.toString());
+                            StringRequest stringRequest = createInitPlayerStringRequest(MainActivity.mainActivity);
+                            if(stringRequest != null)
+                                addStringRequestToQueue(stringRequest);
                         }
                     });
                 }
@@ -117,93 +113,14 @@ public class HttpManager {
         return stringRequest;
     }
 
-    /**
-     * TODO unused testing this out
-     * @param context
-     * @return
-     */
-    public static JsonObjectRequest createInitPlayerJsonRequest(Context context){
-
-        JsonObjectRequest jsonRequest = null;
-
-        Log.d(TAG, "Auth Token: " + authToken);
-        Log.d(TAG, getResString(R.string.initUrl));
-
-        if(authToken.equals("") || authToken == null)
-            Log.e(TAG, "Do not have a valid auth token");
-
-        jsonRequest = new JsonObjectRequest(Method.POST, getResString(R.string.initUrl), null, new Response.Listener<JSONObject>() {
-            @Override
-            public void onResponse(JSONObject response) {
-                Log.d(TAG, "RESPONSE: " + response.toString());
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, error.toString());
-            }
-        }) {
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=utf-8";
-            }
-
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                Map<String, String> headers = new HashMap<String, String>();
-                headers.put("cookie", authToken);
-                return headers;
-            }
-
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("type", "init_player");
-                return params;
-            }
-
-            @Override
-            protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
-                try{
-                    String jsonString = new String(response.data, HttpHeaderParser.parseCharset(response.headers));
-                    return Response.success(new JSONObject(jsonString), HttpHeaderParser.parseCacheHeaders(response));
-                } catch (UnsupportedEncodingException e) {
-                    return Response.error(new ParseError(e));
-                } catch (JSONException je) {
-                    return Response.error(new ParseError(je));
-                }
-//                String responseString = "";
-//                if (response != null) {
-//                    responseString = String.valueOf(response.statusCode);
-//                    // can get more details such as response.headers
-//                    for(Entry<String,String> header : response.headers.entrySet()){
-//                        Log.i(TAG, "Response header: " + header);
-//                    }
-//                    try {
-//                        String str = new String(response.data, "UTF-8");
-//                        Log.d(TAG, "Response data: " + str);
-//                    } catch (UnsupportedEncodingException e) {
-//                        Log.e(TAG, "Error encoding string: " + e.toString());
-//                    }
-//                }
-//                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
-            }
-        };
-        return jsonRequest;
-    }
-
     public static StringRequest createInitPlayerStringRequest(Context context){
 
         StringRequest stringRequest = null;
 
-        Log.d(TAG, "Auth Token: " + authToken);
-        Log.d(TAG, getResString(R.string.initUrl));
-
         if(authToken.equals("") || authToken == null)
             Log.e(TAG, "Do not have a valid auth token");
 
-        stringRequest = new StringRequest(Request.Method.POST, getResString(R.string.initUrl), new Response.Listener<String>() {
+        stringRequest = new StringRequest(Request.Method.POST, getResString(R.string.initUrlRequest), new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 Log.i(TAG, "Response: " + response);
@@ -231,13 +148,13 @@ public class HttpManager {
                     try {
                         final String jsonString = new String(response.data, "UTF-8");
                         JSONArray jsonArray = new JSONArray(jsonString);
+                        MainActivity.initPlayerObjectAdapter = new InitPlayerObjectAdapter(jsonArray);
                         MainActivity.mainActivity.runOnUiThread(new Runnable(){
                             @Override
                             public void run() {
-                                MainActivity.resultsView.setText(jsonString);
+                                MainActivity.setAdapter();
                             }
                         });
-                        MainActivity.initPlayerObjectAdapter = new InitPlayerObjectAdapter(jsonArray);
                     } catch (UnsupportedEncodingException e) {
                         Log.e(TAG, "Error encoding string: " + e.toString());
                     } catch (JSONException e) {
@@ -251,6 +168,84 @@ public class HttpManager {
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("type", "init_player");
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<String, String>();
+                headers.put("cookie", authToken);
+                return headers;
+            }
+        };
+        return stringRequest;
+    }
+
+    public static StringRequest createOrderStringRequest(Context context, final OpenGame openGame){
+
+        StringRequest stringRequest = null;
+
+        if(authToken.equals("") || authToken == null)
+            Log.e(TAG, "Do not have a valid auth token");
+
+        stringRequest = new StringRequest(Request.Method.POST, getResString(R.string.orderRequest), new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.i(TAG, "Response: " + response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, error.toString());
+            }
+        }) {
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=utf-8";
+            }
+
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                String responseString = "";
+                if (response != null) {
+                    responseString = String.valueOf(response.statusCode);
+                    // can get more details such as response.headers
+                    for(Entry<String,String> header : response.headers.entrySet()){
+                        Log.i(TAG, "Response header: " + header);
+                    }
+                    try {
+                        final String jsonString = new String(response.data, "UTF-8");
+                        Log.d(TAG, jsonString);
+                        MainActivity.mainActivity.runOnUiThread(new Runnable(){
+                            @Override
+                            public void run() {
+                                MainActivity.mainActivity.displayGameInfo(openGame, jsonString);
+                            }
+                        });
+//                        JSONArray jsonArray = new JSONArray(jsonString);
+//                        MainActivity.initPlayerObjectAdapter = new InitPlayerObjectAdapter(jsonArray);
+//                        MainActivity.mainActivity.runOnUiThread(new Runnable(){
+//                            @Override
+//                            public void run() {
+//                                MainActivity.setAdapter();
+//                            }
+//                        });
+                    } catch (UnsupportedEncodingException e) {
+                        Log.e(TAG, "Error encoding string: " + e.toString());
+                    }
+//                    } catch (JSONException e) {
+//                        Log.e(TAG, "Error Converting to JSON: " + e);
+//                    }
+                }
+                return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
+            }
+
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("type", "order");
+                params.put("order", "full_universe_report");
+                params.put("game_number", openGame.getNumber());
                 return params;
             }
 

@@ -3,7 +3,7 @@
 
     <string name="app_name">Klaxon</string>
     <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_login">Settings</string>
     <string name="action_quit">Quit</string>
 
     <!-- Preference Strings -->
@@ -12,8 +12,9 @@
     <string name="defaultValue"></string>
 
     <!-- Neptune's URLs -->
-    <string name="loginUrl">https://triton.ironhelmet.com/arequest/login</string>
-    <string name="initUrl">https://triton.ironhelmet.com/mrequest/init_player</string>
+    <string name="loginUrlRequest">https://triton.ironhelmet.com/arequest/login</string>
+    <string name="initUrlRequest">https://triton.ironhelmet.com/mrequest/init_player</string>
+    <string name="orderRequest">https://triton.ironhelmet.com/trequest/order</string>
 
     <!-- Neptune's Request Response Headers -->
     <string name="setCookie">Set-Cookie</string>

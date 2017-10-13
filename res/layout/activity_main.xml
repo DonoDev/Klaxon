@@ -16,17 +16,6 @@
         android:orientation="horizontal"
         android:layout_alignParentTop="true"
         android:gravity="center_horizontal">
-
-       <Button
-           android:id="@+id/authorizeButton"
-           android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
-           android:text="Authorize"/>
-        <Button 
-            android:id="@+id/getUserDataButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Get Games"/>
     </LinearLayout>
 
     <!-- Don't have a use for a footer yet -->
@@ -37,27 +26,25 @@
         android:orientation="horizontal"
         android:layout_alignParentBottom="true"/>
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/footerContainer"
-        android:layout_below="@id/headerContainer"
-        android:fillViewport="true">
-
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_above="@id/footerContainer"
+            android:layout_below="@id/headerContainer"
             android:orientation="vertical">
             <!-- scroll view container -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Debug Log"/>
 
-            <TextView 
-                android:id="@+id/resultView"
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleLarge"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal|center_vertical"/>
+
+            <ListView
+                android:id="@+id/resultView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"/>
         </LinearLayout>
-    </ScrollView>
 </RelativeLayout>
