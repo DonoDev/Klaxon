@@ -2,11 +2,13 @@ package dono.dev.http;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -27,11 +29,14 @@ import dono.dev.klaxon.MainActivity;
 import dono.dev.klaxon.R;
 import dono.dev.model.InitPlayerObjectAdapter;
 import dono.dev.model.OpenGame;
+import dono.dev.utils.JsonObjectKeysPair;
+import dono.dev.utils.KlaxonUtils;
 
 /**
  * TODO update url strings
  * TODO make one request method
  * TODO implement callbacks
+ * TODO move ui code out of httpmanager
  * @author EricDonovan
  *
  */
@@ -216,26 +221,19 @@ public class HttpManager {
                     try {
                         final String jsonString = new String(response.data, "UTF-8");
                         Log.d(TAG, jsonString);
+                        parseFullReport(jsonString);
+
+                        //openGame.createFullReport(jsonString);
+
                         MainActivity.mainActivity.runOnUiThread(new Runnable(){
                             @Override
                             public void run() {
                                 MainActivity.mainActivity.displayGameInfo(openGame, jsonString);
                             }
                         });
-//                        JSONArray jsonArray = new JSONArray(jsonString);
-//                        MainActivity.initPlayerObjectAdapter = new InitPlayerObjectAdapter(jsonArray);
-//                        MainActivity.mainActivity.runOnUiThread(new Runnable(){
-//                            @Override
-//                            public void run() {
-//                                MainActivity.setAdapter();
-//                            }
-//                        });
                     } catch (UnsupportedEncodingException e) {
                         Log.e(TAG, "Error encoding string: " + e.toString());
                     }
-//                    } catch (JSONException e) {
-//                        Log.e(TAG, "Error Converting to JSON: " + e);
-//                    }
                 }
                 return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
             }
@@ -269,5 +267,43 @@ public class HttpManager {
 
     private static String getResString(int id){
         return MainActivity.mainActivity.getResources().getString(id);
+    }
+
+    private static void parseFullReport(String jsonString){
+        try {
+            JSONObject jsonObject = new JSONObject(jsonString);
+            JsonObjectKeysPair objectKeys = KlaxonUtils.parseJSONObject(jsonObject);
+            //grab the report of out the response
+            JSONObject reportJsonObject = (JSONObject) objectKeys.getObject().get("report");
+            JsonObjectKeysPair reportObjectKeys = KlaxonUtils.parseJSONObject(reportJsonObject);
+            //grab the fleets, stars, players
+            JSONObject fleetsJsonObject = (JSONObject) reportObjectKeys.getObject().get("fleets");
+            JsonObjectKeysPair fleetsObjectKeys = KlaxonUtils.parseJSONObject(fleetsJsonObject);
+            for(String key : fleetsObjectKeys.getKeys()){
+                Log.d(TAG, "Fleet Key: " + key);
+                Log.d(TAG, "..." + fleetsObjectKeys.getObject().get(key).toString());
+            }
+            
+            JSONObject starsJsonObject = (JSONObject) reportObjectKeys.getObject().get("stars");
+            JsonObjectKeysPair starsObjectKeys = KlaxonUtils.parseJSONObject(starsJsonObject);
+            for(String key : starsObjectKeys.getKeys()){
+                Log.d(TAG, "Stars Key: " + key);
+                Log.d(TAG, "..." + starsObjectKeys.getObject().get(key).toString());
+            }
+            
+            JSONObject playersJsonObject = (JSONObject) reportObjectKeys.getObject().get("players");
+            JsonObjectKeysPair playersObjectKeys = KlaxonUtils.parseJSONObject(playersJsonObject);
+            for(String key : playersObjectKeys.getKeys()){
+                Log.d(TAG, "Players Key: " + key);
+                Log.d(TAG, "..." + playersObjectKeys.getObject().get(key).toString());
+            }
+
+            for(String key : objectKeys.getKeys()){
+                Log.d(TAG, "Key: " + key);
+                Log.d(TAG, "..." + objectKeys.getObject().get(key).toString());
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON Exception: " + e.toString());
+        }
     }
 }

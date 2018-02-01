@@ -5,10 +5,12 @@ import com.android.volley.toolbox.StringRequest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -23,9 +25,13 @@ import android.widget.Toast;
 import dono.dev.http.HttpManager;
 import dono.dev.model.InitPlayerObjectAdapter;
 import dono.dev.model.OpenGame;
+import dono.dev.service.TicBroadcastReceiver;
+import dono.dev.utils.KlaxonAlarmManager;
 
 /**
- * On first load enter username/password.  check prefs and prompt if null;
+ * TODO oncancel of first dialogue finish
+ * TODO ' encoding text strings
+ * 
  * @author Eric Donovan, /u/burnbarrelncs, donodev, ericdonovandev@gmail.com
  * 
  */
@@ -41,6 +47,10 @@ public class MainActivity extends Activity implements OnClickListener{
     private static ProgressBar spinner;
     public static ListView resultsView;
     public static MainActivity mainActivity;
+
+    private TicBroadcastReceiver ticReceiver;
+
+    KlaxonAlarmManager klaxonAlarmManager;
 
     //model
     public static InitPlayerObjectAdapter initPlayerObjectAdapter;
@@ -61,9 +71,21 @@ public class MainActivity extends Activity implements OnClickListener{
         resultsView = (ListView)    findViewById(R.id.resultView);
         spinner     = (ProgressBar) findViewById(R.id.progressBar);
 
+        ticReceiver = new TicBroadcastReceiver();
+        this.registerReceiver(ticReceiver, new IntentFilter(TicBroadcastReceiver.class.toString()));
+        Log.d(TAG, "Intent name: " + TicBroadcastReceiver.class.toString());
+
+        // Instantiate the AlarmManager
+        klaxonAlarmManager = KlaxonAlarmManager.getInstance();
+        klaxonAlarmManager.initialize(this);
+
+        //TODO static vs singleton
         // Instantiate the RequestQueue.
         HttpManager.initialize(this);
-        displayLoginDialog();
+
+        login();
+
+        klaxonAlarmManager.blank();
     }
 
     @Override
@@ -99,9 +121,21 @@ public class MainActivity extends Activity implements OnClickListener{
     @Override
     protected void onStop() {
         super.onStop();
+
+    }
+
+    @Override
+    protected void onDestroy() {
         if (HttpManager.queue != null) {
             HttpManager.queue.cancelAll(TAG);
         }
+        if(ticReceiver != null) {
+            this.unregisterReceiver(ticReceiver);
+        }
+        // If the alarm has been set, cancel it.
+        if(klaxonAlarmManager != null)
+            klaxonAlarmManager.cancel();
+        super.onDestroy();
     }
 
     SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener = new
@@ -174,13 +208,19 @@ public class MainActivity extends Activity implements OnClickListener{
         ad.show();
     }
 
+    private void login(){
+        if(alias.equals(R.string.defaultValue) || alias.equals(R.string.defaultValue))
+            displayLoginDialog();
+        else{
+            StringRequest stringRequest = HttpManager.createLoginPostRequest(mainActivity);
+            if(stringRequest != null)
+                HttpManager.addStringRequestToQueue(stringRequest);
+        }
+    }
+
     private void setAliasPassword(String alias, String password){
         this.alias    = alias;
         this.password = password;
-    }
-
-    private void startService(){
-        
     }
 
     private String getResString(int id){

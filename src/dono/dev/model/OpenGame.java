@@ -1,9 +1,5 @@
 package dono.dev.model;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
-import android.text.Html;
 import android.util.Log;
 
 public class OpenGame {
@@ -15,13 +11,15 @@ public class OpenGame {
     private String players;
     private String version;
 
+    private FullReport fullreport;
+
     public OpenGame(String name, String number, String players, String version) {
         super();
         this.name =    name;
         this.number =  number;
         this.players = players;
         this.version = version;
-        Log.d(TAG, "OpenGame create: " + this.toString());
+        Log.d(TAG, "OpenGame created: " + this.toString());
     }
 
     public String getName() {
@@ -53,5 +51,9 @@ public class OpenGame {
         .append(version)
         .append(" ]");
         return builder.toString();
+    }
+
+    public void createFullReport(String JsonString) {
+        
     }
 }

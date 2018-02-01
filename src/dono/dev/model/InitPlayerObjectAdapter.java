@@ -8,18 +8,23 @@ import org.json.JSONException;
 
 import com.android.volley.toolbox.StringRequest;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 import dono.dev.http.HttpManager;
 import dono.dev.klaxon.MainActivity;
 import dono.dev.klaxon.R;
+import dono.dev.service.TicBroadcastReceiver;
 import dono.dev.utils.JsonObjectKeysPair;
 import dono.dev.utils.KlaxonUtils;
 
@@ -28,7 +33,7 @@ import dono.dev.utils.KlaxonUtils;
  * @author EricDonovan
  *
  */
-public class InitPlayerObjectAdapter extends BaseAdapter{
+public class InitPlayerObjectAdapter extends BaseAdapter implements OnClickListener{
 
     private static final String TAG = "InitPlayerObject";
 
@@ -138,11 +143,26 @@ public class InitPlayerObjectAdapter extends BaseAdapter{
         TextView numberPlayersTV = (TextView) view.findViewById(R.id.gamePlayers);
         TextView gameIdTV        = (TextView) view.findViewById(R.id.gameId);
 
+        Button serviceButton = (Button) view.findViewById(R.id.serviceButton);
+        serviceButton.setOnClickListener(this);
+
         gameNameTV.setText(openGame.getName());
         gameVersionTV.setText(openGame.getVersion());
         numberPlayersTV.setText(openGame.getPlayers());
         gameIdTV.setText(openGame.getNumber());
 
         return view;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+        case R.id.serviceButton:
+            break;
+        case R.id.cancelServiceButton:
+            break;
+        default:
+            break;
+        }
     }
 }
